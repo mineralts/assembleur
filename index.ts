@@ -8,3 +8,6 @@
  *
  */
 
+import Assembler from './src/Assembler'
+
+export default Assembler
