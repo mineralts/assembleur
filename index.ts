@@ -9,5 +9,9 @@
  */
 
 import Assembler from './src/Assembler'
+import EventsListener from './src/listeners/EventsListener'
 
-export default Assembler
+export {
+  Assembler,
+  EventsListener
+}
