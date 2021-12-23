@@ -1,27 +1,34 @@
-import Connector from '@mineralts/connector'
+import { Connector } from '@mineralts/connector'
 import Application from '@mineralts/application'
 import { fetch } from 'fs-recursive'
 import { join } from 'path'
-import { MineralEvent } from '@mineralts/core'
+import { MineralEvent, PacketManager } from '@mineralts/core'
+import { Client } from '@mineralts/api'
 import EventsListener from './listeners/EventsListener'
 
 export default class Assembler {
-  private eventListener: EventsListener = new EventsListener()
+  public readonly eventListener: EventsListener = new EventsListener()
+  public connector!: Connector
 
-  constructor (private application: Application) {
+  constructor (public application: Application, private packetManager: PacketManager) {
   }
 
   public async build () {
-    const connector = new Connector(this.application)
-    connector.http.defineHeaders({ Authorization: `Bot ${this.application.token}` })
+    this.connector = new Connector(this.application)
+    this.connector.http.defineHeaders({ Authorization: `Bot ${this.application.token}` })
 
-    await connector.socket.connect()
-    connector.socket.dispatch((payload) => {
-      // Emit les events
-      this.eventListener.emit(payload.t?.toLowerCase(), '')
+    await this.connector.socket.connect()
+    this.connector.socket.dispatch(async (payload) => {
+      const packets = this.packetManager.resolve(payload.t)
+
+      if (packets?.length) {
+        await Promise.all(
+          packets.map(async (packet) => (
+            packet?.handle(this, payload.d)
+          ))
+        )
+      }
     })
-
-    await this.register()
   }
 
   public async register () {
@@ -49,8 +56,9 @@ export default class Assembler {
   }
 
   protected registerEvent (path, item: { new(): MineralEvent, event: string }): void {
-    const event = new item() as MineralEvent & { event: string }
+    const event = new item() as MineralEvent & { event: string, client: Client }
     event.logger = this.application.logger
+    event.client = this.application.client
 
     const eventContainer = this.application.container.events.get(item.event)
 
@@ -61,6 +69,8 @@ export default class Assembler {
       eventContainer.set(path, event)
     }
 
-    this.eventListener.listen(item.event, event)
+    this.eventListener.on(item.event, async (...args: any[]) => {
+      await event.run(...args)
+    })
   }
 }
