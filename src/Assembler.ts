@@ -5,6 +5,7 @@ import { join } from 'path'
 import { MineralEvent, PacketManager } from '@mineralts/core'
 import { Client } from '@mineralts/api'
 import EventsListener from './listeners/EventsListener'
+import * as fs from 'fs'
 
 export default class Assembler {
   public readonly eventListener: EventsListener = new EventsListener()
@@ -40,8 +41,11 @@ export default class Assembler {
     )
 
     for (const [, file] of files) {
-      const { default: item } = await import(file.path)
-      this.dispatch(file.path, item)
+      const content = await fs.promises.readFile(file.path, 'utf8')
+      if (!content.startsWith('// mineral-ignore')) {
+        const { default: item } = await import(file.path)
+        this.dispatch(file.path, item)
+      }
     }
   }
 
@@ -50,7 +54,7 @@ export default class Assembler {
       event: () => this.registerEvent(path, item),
     }
 
-    if (item.identifier in identifiers) {
+    if (item && item.identifier in identifiers) {
       identifiers[item.identifier]()
     }
   }
