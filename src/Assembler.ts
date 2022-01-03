@@ -5,7 +5,7 @@ import { join } from 'path'
 import { MineralEvent, PacketManager } from '@mineralts/core'
 import { Client } from '@mineralts/api'
 import EventsListener from './listeners/EventsListener'
-import * as fs from 'fs'
+import fs from 'fs'
 
 export default class Assembler {
   public readonly eventListener: EventsListener = new EventsListener()
