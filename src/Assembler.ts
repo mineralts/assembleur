@@ -2,10 +2,11 @@ import { Connector } from '@mineralts/connector'
 import Application from '@mineralts/application'
 import { fetch } from 'fs-recursive'
 import { join } from 'path'
-import { MineralEvent, PacketManager } from '@mineralts/core'
+import { MineralCommand, MineralEvent, PacketManager } from '@mineralts/core'
 import { Client } from '@mineralts/api'
 import EventsListener from './listeners/EventsListener'
 import fs from 'fs'
+import { CommandContext } from './types'
 
 export default class Assembler {
   public readonly eventListener: EventsListener = new EventsListener()
@@ -52,6 +53,7 @@ export default class Assembler {
   private dispatch (path, item) {
     const identifiers = {
       event: () => this.registerEvent(path, item),
+      'slash-command': () => this.registerCommand(path, item)
     }
 
     if (item && item.identifier in identifiers) {
@@ -76,5 +78,21 @@ export default class Assembler {
     this.eventListener.on(item.event, async (...args: any[]) => {
       await event.run(...args)
     })
+  }
+
+  protected registerCommand (path, item: { new(): MineralCommand }) {
+    const command = new item() as MineralCommand & { data: CommandContext }
+
+    command.logger = this.application.logger
+    command.client = this.application.client
+    command.data = item.prototype.data
+
+    command.getLabel = () => command.data.label
+    command.getDescription = () => command.data.description
+    command.getOption = (name: string) => command.data.options.find((option) => (
+      option.name === name
+    ))
+
+    this.application.container.commands.set(path, command)
   }
 }
