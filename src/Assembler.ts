@@ -53,7 +53,8 @@ export default class Assembler {
   private dispatch (path, item) {
     const identifiers = {
       event: () => this.registerEvent(path, item),
-      'slash-command': () => this.registerCommand(path, item)
+      'slash-command': () => this.registerCommand(path, item),
+      'subcommand': () => this.registerSubCommands(path, item),
     }
 
     if (item && item.identifier in identifiers) {
@@ -94,5 +95,17 @@ export default class Assembler {
     ))
 
     this.application.container.commands.set(path, command)
+  }
+
+  public registerSubCommands (path, item: { new(): MineralCommand }) {
+    const subcommand = new item() as MineralCommand & { data: CommandContext }
+    subcommand.logger = this.application.logger
+    subcommand.client = this.application.client
+    subcommand.data = item.prototype.data
+
+    subcommand.getLabel = () => subcommand.data.label
+    subcommand.getDescription = () => subcommand.data.description
+
+    this.application.container.subcommands.set(path, subcommand)
   }
 }
