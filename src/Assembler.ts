@@ -101,7 +101,10 @@ export default class Assembler {
     const subcommand = new item() as MineralCommand & { data: CommandContext }
     subcommand.logger = this.application.logger
     subcommand.client = this.application.client
-    subcommand.data = item.prototype.data
+    subcommand.data = {
+      ...item.prototype.data,
+      identifier: `${item.prototype.data.parent.join('.')}.${item.prototype.data.label}`
+    }
 
     subcommand.getLabel = () => subcommand.data.label
     subcommand.getDescription = () => subcommand.data.description
