@@ -10,8 +10,10 @@
 
 import Assembler from './src/Assembler'
 import EventsListener from './src/listeners/EventsListener'
+import { CommandContext } from './src/types'
 
 export {
   Assembler,
-  EventsListener
+  EventsListener,
+  CommandContext
 }
